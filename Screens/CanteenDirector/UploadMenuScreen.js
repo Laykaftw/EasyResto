@@ -1,5 +1,5 @@
 // Screens/UploadMenuScreen.js
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -8,47 +8,74 @@ import {
     Alert,
     TouchableOpacity,
     StyleSheet,
+    Image,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import colors from '../../styles/colors';
-import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import { createMenuItem, getCurrentUser, uploadFile } from '../../Appwrite/appwrite';
 
 const UploadMenuScreen = ({ navigation }) => {
-    const [menuItem, setMenuItem] = useState('');
-    const [price, setPrice] = useState('');
-    const [imageUri, setImageUri] = useState(null);
+    // useEffect(() => {
+    //     const fetchUser = async () => {
+    //         try {
+    //             const user = await getCurrentUser();
+    //             console.log("User Label", user.labels);
+    //         } catch (error) {
+    //             console.error("Failed to fetch user:", error);
+    //         }
+    //     };
 
-    const uploadMenu = () => {
-        if (!menuItem || !price || !imageUri) {
+    //     fetchUser();
+    // }, []);
+    const [menuItem, setMenuItem] = useState('');
+    const [image, setImage] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const uploadMenu = async () => {
+        if (!menuItem ||  !image) {
             Alert.alert('Error', 'Please fill in all fields and select an image');
             return;
         }
-        // Handle menu upload logic here
-        Alert.alert('Success', 'Menu item uploaded successfully');
-        setMenuItem('');
-        setPrice('');
-        setImageUri(null);
+
+        setIsUploading(true);
+
+        try {
+            const user = await getCurrentUser();
+            if (!user) {
+                Alert.alert('Authentication Error', 'Please log in to continue.');
+                navigation.navigate('Login');
+                return;
+            }
+
+            // Create a new menu item using the createMenuItem function
+
+            const date = new Date();
+            await createMenuItem(menuItem, image, date);
+
+            Alert.alert('Success', 'Menu item uploaded successfully');
+            setMenuItem('');
+            setImage(null);
+        } catch (error) {
+            console.error('Upload Error:', error);
+            Alert.alert('Error', 'Failed to upload menu item: ' + error.message);
+        } finally {
+            setIsUploading(false);
+        }
     };
 
-    const pickImage = async () => {
-        // Request permission to access media library
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert(
-                'Permission Denied',
-                'We need permission to access your photos to upload an image.'
-            );
-            return;
-        }
-
-        // Open image picker
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            quality: 1,
+    const openPicker = async () => {
+        const result = await DocumentPicker.getDocumentAsync({
+            type: ["image/png", "image/jpg", "image/jpeg"],
         });
 
-        if (!result.cancelled) {
-            setImageUri(result.uri);
+        if (!result.canceled) {
+            setImage(result.assets[0]);
+        } else {
+            setTimeout(() => {
+                Alert.alert("Document picked", JSON.stringify(result, null, 2));
+            }, 100);
         }
     };
 
@@ -63,27 +90,28 @@ const UploadMenuScreen = ({ navigation }) => {
                         onChangeText={(text) => setMenuItem(text)}
                         style={styles.input}
                     />
-                    <TextInput
-                        placeholder="Price"
-                        value={price}
-                        onChangeText={(text) => setPrice(text)}
-                        style={styles.input}
-                        keyboardType="numeric"
-                    />
 
-                    <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
-                        {imageUri ? (
-                            <Image source={{ uri: imageUri }} style={styles.image} />
+                    <TouchableOpacity onPress={openPicker} style={styles.imagePicker}>
+                        {image ? (
+                            <Image source={{ uri: image.uri }} style={styles.image} />
                         ) : (
                             <Text style={styles.imagePickerText}>Select Image</Text>
                         )}
                     </TouchableOpacity>
 
-                    <TouchableOpacity onPress={uploadMenu} style={styles.button}>
-                        <Text style={styles.buttonText}>Upload</Text>
+                    <TouchableOpacity
+                        onPress={uploadMenu}
+                        style={styles.button}
+                        disabled={isUploading}
+                    >
+                        {isUploading ? (
+                            <ActivityIndicator color={colors.white} />
+                        ) : (
+                            <Text style={styles.buttonText}>Upload</Text>
+                        )}
                     </TouchableOpacity>
                     <TouchableOpacity
-                        onPress={() => navigation.goBack()}
+                        onPress={() => navigation.navigate('Profile')}
                         style={styles.linkContainer}
                     >
                         <Text style={styles.linkText}>Back to Home</Text>
@@ -117,6 +145,7 @@ const styles = StyleSheet.create({
         padding: 16,
         backgroundColor: colors.white,
         borderRadius: 8,
+        textAlignVertical: 'top', // For multiline TextInput
     },
     imagePicker: {
         marginTop: 28,
@@ -142,6 +171,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
+        height: 50,
     },
     buttonText: {
         color: colors.white,
@@ -158,4 +188,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default UploadMenuScreen; 
+export default UploadMenuScreen;

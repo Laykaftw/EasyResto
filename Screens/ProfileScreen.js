@@ -1,19 +1,28 @@
 // Screens/ProfileScreen.js
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getCurrentUser, logout } from '../Appwrite/appwrite';
+import * as ImagePicker from 'expo-image-picker';
+import { getCurrentProfile, getCurrentUser, updateUserProfile, uploadFile, logout } from '../Appwrite/appwrite';
 import colors from '../styles/colors';
 
 const ProfileScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [avatar, setAvatar] = useState(null);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const currentUser = await getCurrentUser();
+        const currentUser = await getCurrentProfile();
         setUser(currentUser);
+        setName(currentUser.Name);
+        setEmail(currentUser.Email);
+        setAvatar(currentUser.Avatar);
+        // console.log('User:', currentUser);
       } catch (error) {
         console.error('Error fetching user:', error);
         Alert.alert('Error', 'Failed to fetch user information.');
@@ -37,6 +46,19 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
+  const handleUpdateProfile = async () => {
+    setIsUpdating(true);
+    try {
+      await updateUserProfile({ name, email });
+      Alert.alert('Success', 'Profile updated successfully');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      Alert.alert('Error', 'Failed to update profile.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   if (!user) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -54,14 +76,35 @@ const ProfileScreen = ({ navigation }) => {
             style={styles.logoutIcon}
           />
         </TouchableOpacity>
-        <View style={styles.avatarContainer}>
           <Image
-            source={{ uri: user.avatar }}
+            source={{ uri: avatar.uri || avatar }}
+            resizeMode='cover'
             style={styles.avatar}
           />
-        </View>
-        <Text style={styles.userName}>{user.name}</Text>
-        {/* Additional user information or statistics can go here */}
+        <TextInput
+          placeholder="Name"
+          value={name}
+          onChangeText={setName}
+          style={styles.input}
+        />
+        <TextInput
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+          keyboardType="email-address"
+        />
+        <TouchableOpacity
+          onPress={handleUpdateProfile}
+          style={styles.button}
+          disabled={isUpdating}
+        >
+          {isUpdating ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <Text style={styles.buttonText}>Save Changes</Text>
+          )}
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -100,13 +143,27 @@ const styles = StyleSheet.create({
     height: 76,
     borderRadius: 38,
   },
-  userName: {
-    fontSize: 24,
-    color: colors.white,
-    fontWeight: 'bold',
-    marginTop: 16,
+  input: {
+    marginTop: 28,
+    padding: 16,
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    width: '100%',
   },
-  // Add more styles as needed
+  button: {
+    marginTop: 28,
+    padding: 16,
+    backgroundColor: colors.secondary,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  buttonText: {
+    color: colors.white,
+    fontSize: 18,
+    fontWeight: '600',
+  },
 });
 
 export default ProfileScreen;

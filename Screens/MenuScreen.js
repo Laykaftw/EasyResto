@@ -1,50 +1,81 @@
 // Screens/MenuScreen.js
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
-    ScrollView,
     StyleSheet,
+    Image,
     FlatList,
-    TouchableOpacity,
+    ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import colors from '../styles/colors';
-
-const menuItems = [
-    { id: '1', name: 'Spaghetti Bolognese', price: '$12' },
-    { id: '2', name: 'Chicken Caesar Salad', price: '$10' },
-    { id: '3', name: 'Margherita Pizza', price: '$15' },
-    // Add more menu items as needed
-];
+import colors from '../../styles/colors';
+import { getMenuItems, storage, appwriteConfig } from '../Appwrite/appwrite';
 
 const MenuScreen = ({ navigation }) => {
+    const [menuItems, setMenuItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        console.log("MenuScreen rendered"); // Check if the component renders
+        fetchMenuItems();
+    }, []);
+
+    const fetchMenuItems = async () => {
+        console.log("fetchMenuItems called"); // Debugging line to ensure function is called
+
+        try {
+            const items = await getMenuItems();
+            console.log("Fetched items:", items); // Debugging line
+            if (items && items.length > 0) {
+                setMenuItems(items);
+            } else {
+                Alert.alert('No Menu Items', 'No menu items available');
+            }
+        } catch (error) {
+            console.error('Error fetching menu items:', error);
+            Alert.alert('Error', 'Failed to load menu items');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getImageUrl = (fileId) => {
+        console.log("Fetching image URL for:", fileId); // Debugging line
+        return storage.getFilePreview(appwriteConfig.storageId, fileId).toString();
+    };
+
     const renderItem = ({ item }) => (
         <View style={styles.menuItem}>
+            <Image
+                source={{ uri: getImageUrl(item.imageId) }}
+                style={styles.menuItemImage}
+            />
             <Text style={styles.menuItemText}>{item.name}</Text>
-            <Text style={styles.menuItemPrice}>{item.price}</Text>
+            <Text style={styles.menuItemDescription}>{item.description}</Text>
         </View>
     );
 
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.safeArea}>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={colors.white} />
+                </View>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.safeArea}>
-            <ScrollView>
-                <View style={styles.container}>
-                    <Text style={styles.title}>Today's Menu</Text>
-                    <FlatList
-                        data={menuItems}
-                        renderItem={renderItem}
-                        keyExtractor={(item) => item.id}
-                        contentContainerStyle={styles.menuList}
-                    />
-                    <TouchableOpacity
-                        onPress={() => navigation.goBack()}
-                        style={styles.linkContainer}
-                    >
-                        <Text style={styles.linkText}>Back to Home</Text>
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
+            <FlatList
+                data={menuItems}
+                renderItem={renderItem}
+                keyExtractor={(item) => item.$id}
+                contentContainerStyle={styles.container}
+            />
+            
         </SafeAreaView>
     );
 };
@@ -55,43 +86,36 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     container: {
-        width: '100%',
-        minHeight: '82%',
         paddingHorizontal: 16,
-        marginVertical: 24,
+        paddingVertical: 24,
     },
-    title: {
-        fontSize: 28,
-        color: colors.white,
-        fontWeight: '600',
-        marginBottom: 20,
-    },
-    menuList: {
-        paddingBottom: 20,
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     menuItem: {
         backgroundColor: colors.white,
-        padding: 16,
         borderRadius: 8,
-        marginBottom: 12,
+        marginBottom: 16,
+        overflow: 'hidden',
+        padding: 16,
+    },
+    menuItemImage: {
+        width: '100%',
+        height: 200,
+        borderRadius: 8,
     },
     menuItemText: {
-        fontSize: 18,
+        fontSize: 20,
+        fontWeight: '600',
         color: colors.textDark,
-        fontWeight: '500',
+        marginTop: 12,
     },
-    menuItemPrice: {
+    menuItemDescription: {
         fontSize: 16,
         color: colors.textGray,
-        marginTop: 4,
-    },
-    linkContainer: {
-        marginTop: 16,
-        alignItems: 'center',
-    },
-    linkText: {
-        color: colors.white,
-        fontSize: 16,
+        marginTop: 8,
     },
 });
 
