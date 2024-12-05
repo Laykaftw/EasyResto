@@ -1,4 +1,4 @@
-import { Client, Account, ID, Avatars, Databases, Permission, Role } from 'react-native-appwrite';
+import { Client, Account, ID, Avatars, Databases, Permission, Role, Query } from 'react-native-appwrite';
 
 const appwriteConfig = {
     endpoint: 'https://cloud.appwrite.io/v1',
@@ -59,15 +59,17 @@ export const createUser = async (Email, Password, Name, Role) => {
     }
 };
 
-// Function to sign in a user
 export const signIn = async (Email, Password) => {
     try {
         // Check if a session already exists
+
         const sessions = await account.listSessions();
+
         if (sessions.total > 0) {
             // Delete existing sessions before creating a new one
             await account.deleteSession('current');
         }
+
         // Create a new session
         const session = await account.createEmailPasswordSession(Email, Password);
         return session;
@@ -76,11 +78,10 @@ export const signIn = async (Email, Password) => {
     }
 };
 
-// Function to get the current user's account details
 export const getCurrentUser = async () => {
     try {
         const user = await account.get();
-        return user;
+        return user; // This includes labels
     } catch (error) {
         throw new Error('Failed to get user: ' + error.message);
     }
@@ -108,12 +109,7 @@ export const createMenuItem = async (name, description) => {
                 name,
                 description,
                 createdBy: user.$id,
-            },
-            [
-                Permission.read(Role.any()),
-                Permission.update(Role.user(user.$id)),
-                Permission.delete(Role.user(user.$id)),
-            ]
+            }
         );
 
         return newMenuItem;

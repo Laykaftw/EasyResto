@@ -22,14 +22,13 @@ const LoginScreen = ({ navigation }) => {
         try {
             await signIn(form.email, form.password);
             const user = await getCurrentUser();
-
-            if (user.role === 'student') {
-                navigation.navigate('Menu');
-            } else if (user.Role === 'canteenDirector') {
+            if (user.labels?.includes('Director')) {
+                // User is a Canteen Director
                 navigation.navigate('UploadMenu');
             } else {
-                Alert.alert('Login Error', 'Unknown user role');
-            }
+                // User is a Student
+                navigation.navigate('Menu');
+            } 
         } catch (error) {
             console.error(error);
             Alert.alert('Error', error.message);

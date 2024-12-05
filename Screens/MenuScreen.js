@@ -1,76 +1,53 @@
-// Screens/Student/MenuScreen.js
-import React, { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet, Text, Image, ActivityIndicator } from 'react-native';
+// Screens/MenuScreen.js
+import React from 'react';
+import {
+    View,
+    Text,
+    ScrollView,
+    StyleSheet,
+    FlatList,
+    TouchableOpacity,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getMenuItems, storage } from '../../Appwrite/appwrite';
-import colors from '../../styles/colors';
+import colors from '../styles/colors';
 
-function MenuScreen() {
-    const [menuItems, setMenuItems] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+const menuItems = [
+    { id: '1', name: 'Spaghetti Bolognese', price: '$12' },
+    { id: '2', name: 'Chicken Caesar Salad', price: '$10' },
+    { id: '3', name: 'Margherita Pizza', price: '$15' },
+    // Add more menu items as needed
+];
 
-    useEffect(() => {
-        const fetchMenuItems = async () => {
-            try {
-                const items = await getMenuItems();
-                setMenuItems(items);
-            } catch (error) {
-                console.error('Error fetching menu items:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchMenuItems();
-    }, []);
-
-    const renderItem = ({ item }) => {
-        const imageUrl = item.imageId
-            ? storage.getFilePreview('YOUR_BUCKET_ID', item.imageId).href
-            : null;
-
-        return (
-            <View style={styles.menuItem}>
-                {imageUrl ? (
-                    <Image source={{ uri: imageUrl }} style={styles.menuImage} />
-                ) : (
-                    <View style={styles.menuImagePlaceholder}>
-                        <Text>No Image</Text>
-                    </View>
-                )}
-                <View style={styles.menuInfo}>
-                    <Text style={styles.menuName}>{item.name}</Text>
-                    <Text style={styles.menuDescription}>{item.description}</Text>
-                </View>
-            </View>
-        );
-    };
-
-    if (isLoading) {
-        return (
-            <SafeAreaView style={styles.safeArea}>
-                <ActivityIndicator size="large" color={colors.secondary} />
-            </SafeAreaView>
-        );
-    }
+const MenuScreen = ({ navigation }) => {
+    const renderItem = ({ item }) => (
+        <View style={styles.menuItem}>
+            <Text style={styles.menuItemText}>{item.name}</Text>
+            <Text style={styles.menuItemPrice}>{item.price}</Text>
+        </View>
+    );
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            {menuItems.length === 0 ? (
-                <View style={styles.noMenuContainer}>
-                    <Text style={styles.noMenuText}>No menu available</Text>
+            <ScrollView>
+                <View style={styles.container}>
+                    <Text style={styles.title}>Today's Menu</Text>
+                    <FlatList
+                        data={menuItems}
+                        renderItem={renderItem}
+                        keyExtractor={(item) => item.id}
+                        contentContainerStyle={styles.menuList}
+                    />
+                    <TouchableOpacity
+                        onPress={() => navigation.goBack()}
+                        style={styles.linkContainer}
+                    >
+                        <Text style={styles.linkText}>Back to Home</Text>
+                    </TouchableOpacity>
                 </View>
-            ) : (
-                <FlatList
-                    data={menuItems}
-                    renderItem={renderItem}
-                    keyExtractor={(item) => item.$id}
-                    contentContainerStyle={styles.container}
-                />
-            )}
+            </ScrollView>
         </SafeAreaView>
     );
-}
+};
 
 const styles = StyleSheet.create({
     safeArea: {
@@ -78,52 +55,43 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     container: {
-        padding: 16,
+        width: '100%',
+        minHeight: '82%',
+        paddingHorizontal: 16,
+        marginVertical: 24,
+    },
+    title: {
+        fontSize: 28,
+        color: colors.white,
+        fontWeight: '600',
+        marginBottom: 20,
+    },
+    menuList: {
+        paddingBottom: 20,
     },
     menuItem: {
-        flexDirection: 'row',
-        marginBottom: 16,
         backgroundColor: colors.white,
+        padding: 16,
         borderRadius: 8,
-        overflow: 'hidden',
-        elevation: 2,
-        shadowColor: colors.black,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 3,
+        marginBottom: 12,
     },
-    menuImage: {
-        width: 100,
-        height: 100,
-    },
-    menuImagePlaceholder: {
-        width: 100,
-        height: 100,
-        backgroundColor: '#EEE',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    menuInfo: {
-        flex: 1,
-        padding: 8,
-    },
-    menuName: {
+    menuItemText: {
         fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 4,
+        color: colors.textDark,
+        fontWeight: '500',
     },
-    menuDescription: {
-        fontSize: 14,
-        color: colors.gray600,
+    menuItemPrice: {
+        fontSize: 16,
+        color: colors.textGray,
+        marginTop: 4,
     },
-    noMenuContainer: {
-        flex: 1,
-        justifyContent: 'center',
+    linkContainer: {
+        marginTop: 16,
         alignItems: 'center',
     },
-    noMenuText: {
+    linkText: {
         color: colors.white,
-        fontSize: 18,
+        fontSize: 16,
     },
 });
 

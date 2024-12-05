@@ -1,92 +1,92 @@
+// Screens/UploadMenuScreen.js
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Alert, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import {
+    View,
+    Text,
+    ScrollView,
+    TextInput,
+    Alert,
+    TouchableOpacity,
+    StyleSheet,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { createMenuItem, uploadFile, appwriteConfig } from '../../Appwrite/appwrite';
+import colors from '../../styles/colors';
 import * as ImagePicker from 'expo-image-picker';
 
-const UploadMenuScreen = () => {
-    const [form, setForm] = useState({
-        menuName: '',
-        serveDate: '',
-        imageUri: null
-    });
+const UploadMenuScreen = ({ navigation }) => {
+    const [menuItem, setMenuItem] = useState('');
+    const [price, setPrice] = useState('');
+    const [imageUri, setImageUri] = useState(null);
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const uploadMenu = () => {
+        if (!menuItem || !price || !imageUri) {
+            Alert.alert('Error', 'Please fill in all fields and select an image');
+            return;
+        }
+        // Handle menu upload logic here
+        Alert.alert('Success', 'Menu item uploaded successfully');
+        setMenuItem('');
+        setPrice('');
+        setImageUri(null);
+    };
 
     const pickImage = async () => {
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!permissionResult.granted) {
-            Alert.alert('Permission required', 'Please allow access to your photos to upload a menu image');
+        // Request permission to access media library
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert(
+                'Permission Denied',
+                'We need permission to access your photos to upload an image.'
+            );
             return;
         }
 
-        const pickerResult = await ImagePicker.launchImageLibraryAsync({
-            allowsEditing: true,
-            aspect: [4, 3],
+        // Open image picker
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
             quality: 1,
         });
 
-        if (!pickerResult.canceled) {
-            setForm({ ...form, imageUri: pickerResult.assets[0].uri });
-        }
-    };
-
-    const submit = async () => {
-        if (!form.menuName || !form.serveDate) {
-            Alert.alert('Error', 'Please fill in all fields');
-            return;
-        }
-        setIsSubmitting(true);
-        try {
-            let imageFileId = null;
-            if (form.imageUri) {
-                imageFileId = await uploadFile(appwriteConfig.menuImagesBucketId, form.imageUri);
-            }
-            await createMenuItem(form.menuName, form.serveDate, imageFileId);
-            Alert.alert('Success', 'Menu uploaded successfully');
-            setForm({ menuName: '', serveDate: '', imageUri: null });
-        } catch (error) {
-            console.error('Error uploading menu:', error);
-            Alert.alert('Error', error.message);
-        } finally {
-            setIsSubmitting(false);
+        if (!result.cancelled) {
+            setImageUri(result.uri);
         }
     };
 
     return (
-        <SafeAreaView className="bg-primary h-full">
+        <SafeAreaView style={styles.safeArea}>
             <ScrollView>
-                <View className="w-full justify-center min-h-[82vh] px-4 my-6">
-                    <Text className="text-2xl text-white font-semibold mt-10">
-                        Upload Menu
-                    </Text>
+                <View style={styles.container}>
+                    <Text style={styles.title}>Upload Menu Item</Text>
                     <TextInput
-                        placeholder="Menu Name"
-                        value={form.menuName}
-                        onChangeText={(e) => setForm({ ...form, menuName: e })}
-                        className="mt-7 p-4 bg-white rounded"
+                        placeholder="Menu Item"
+                        value={menuItem}
+                        onChangeText={(text) => setMenuItem(text)}
+                        style={styles.input}
                     />
                     <TextInput
-                        placeholder="Serve Date"
-                        value={form.serveDate}
-                        onChangeText={(e) => setForm({ ...form, serveDate: e })}
-                        className="mt-7 p-4 bg-white rounded"
+                        placeholder="Price"
+                        value={price}
+                        onChangeText={(text) => setPrice(text)}
+                        style={styles.input}
+                        keyboardType="numeric"
                     />
-                    <TouchableOpacity onPress={pickImage} className="mt-7 p-4 bg-gray-200 rounded justify-center items-center">
-                        {form.imageUri ? (
-                            <Image source={{ uri: form.imageUri }} className="w-full h-40" />
+
+                    <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
+                        {imageUri ? (
+                            <Image source={{ uri: imageUri }} style={styles.image} />
                         ) : (
-                            <Text className="text-gray-600">Pick an Image</Text>
+                            <Text style={styles.imagePickerText}>Select Image</Text>
                         )}
                     </TouchableOpacity>
+
+                    <TouchableOpacity onPress={uploadMenu} style={styles.button}>
+                        <Text style={styles.buttonText}>Upload</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity
-                        onPress={submit}
-                        className="mt-7 p-4 bg-secondary rounded justify-center items-center"
-                        disabled={isSubmitting}
+                        onPress={() => navigation.goBack()}
+                        style={styles.linkContainer}
                     >
-                        <Text className="text-white text-lg font-semibold">
-                            {isSubmitting ? 'Uploading...' : 'Upload Menu'}
-                        </Text>
+                        <Text style={styles.linkText}>Back to Home</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
@@ -94,4 +94,68 @@ const UploadMenuScreen = () => {
     );
 };
 
-export default UploadMenuScreen;
+const styles = StyleSheet.create({
+    safeArea: {
+        backgroundColor: colors.primary,
+        flex: 1,
+    },
+    container: {
+        width: '100%',
+        justifyContent: 'center',
+        minHeight: '82%',
+        paddingHorizontal: 16,
+        marginVertical: 24,
+    },
+    title: {
+        fontSize: 24,
+        color: colors.white,
+        fontWeight: '600',
+        marginTop: 40,
+    },
+    input: {
+        marginTop: 28,
+        padding: 16,
+        backgroundColor: colors.white,
+        borderRadius: 8,
+    },
+    imagePicker: {
+        marginTop: 28,
+        height: 200,
+        backgroundColor: colors.white,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    imagePickerText: {
+        color: colors.textGray,
+        fontSize: 18,
+    },
+    image: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 8,
+    },
+    button: {
+        marginTop: 28,
+        padding: 16,
+        backgroundColor: colors.secondary,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    buttonText: {
+        color: colors.white,
+        fontSize: 18,
+        fontWeight: '600',
+    },
+    linkContainer: {
+        marginTop: 16,
+        alignItems: 'center',
+    },
+    linkText: {
+        color: colors.white,
+        fontSize: 16,
+    },
+});
+
+export default UploadMenuScreen; 
