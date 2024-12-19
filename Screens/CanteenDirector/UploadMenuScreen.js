@@ -111,7 +111,7 @@ const UploadMenuScreen = ({ navigation }) => {
                         )}
                     </TouchableOpacity>
                     <TouchableOpacity
-                        onPress={() => navigation.navigate('Profile')}
+                        onPress={() => navigation.navigate('Menu')}
                         style={styles.linkContainer}
                     >
                         <Text style={styles.linkText}>Back to Home</Text>

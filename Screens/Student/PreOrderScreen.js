@@ -1,11 +1,21 @@
 // Screens/Student/PreOrderScreen.js
+
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+    View,
+    FlatList,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    ActivityIndicator,
+    Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getMenuItems } from '../../Appwrite/appwrite';
 import colors from '../../styles/colors';
 
-const PreOrderScreen = ({ navigation }) => {
+const PreOrderScreen = ({ navigation, route }) => {
+    const { menuItem } = route.params; // Fetch menuItem from route params
     const [menuItems, setMenuItems] = useState([]);
     const [selectedItems, setSelectedItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -25,7 +35,7 @@ const PreOrderScreen = ({ navigation }) => {
         fetchMenuItems();
     }, []);
 
-    const toggleSelectItem = (item) => {
+    const handleItemPress = (item) => {
         if (selectedItems.includes(item)) {
             setSelectedItems(selectedItems.filter((i) => i.$id !== item.$id));
         } else {
@@ -34,21 +44,26 @@ const PreOrderScreen = ({ navigation }) => {
     };
 
     const proceedToOrderSummary = () => {
+        if (selectedItems.length === 0) {
+            Alert.alert('No Items Selected', 'Please select at least one item to proceed.');
+            return;
+        }
         navigation.navigate('OrderSummary', { selectedItems });
     };
 
-    const renderItem = ({ item }) => (
-        <TouchableOpacity
-            style={[
-                styles.menuItem,
-                selectedItems.includes(item) && styles.selectedItem,
-            ]}
-            onPress={() => toggleSelectItem(item)}
-        >
-            <Text style={styles.menuName}>{item.name}</Text>
-            <Text style={styles.menuDescription}>{item.description}</Text>
-        </TouchableOpacity>
-    );
+    const renderItem = ({ item }) => {
+        const isSelected = selectedItems.some((i) => i.$id === item.$id);
+        return (
+            <TouchableOpacity
+                style={[styles.menuItem, isSelected && styles.selectedItem]}
+                onPress={() => handleItemPress(item)}
+            >
+                <Text style={styles.menuName}>{item.MenuName}</Text>
+                <Text style={styles.menuDescription}>{item.description}</Text>
+                {isSelected && <Text style={styles.selectedText}>Selected</Text>}
+            </TouchableOpacity>
+        );
+    };
 
     if (isLoading) {
         return (
@@ -102,6 +117,11 @@ const styles = StyleSheet.create({
     },
     selectedItem: {
         backgroundColor: colors.secondary100,
+    },
+    selectedText: {
+        marginTop: 8,
+        color: colors.secondary,
+        fontWeight: 'bold',
     },
     menuName: {
         fontSize: 18,

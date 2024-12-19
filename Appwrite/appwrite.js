@@ -6,6 +6,7 @@ const appwriteConfig = {
     databaseId: '674edeff00072e57c8d0',
     userCollectionId: "674edf1b00227aeaeab3",
     menusCollectionId: "674edf84001344fcaac3",
+    ordersCollectionId: "674f388700021bfad063",
     storageId: '674f12ed000cd761dec1'
 }
 
@@ -25,8 +26,17 @@ const storage = new Storage(client);
 export const createUser = async (Email, Password, Name, Role) => {
     try {
         // Create a new user account
-        const newAccount = await account.create(ID.unique(), Email, Password, Name, Role);
+        console.log(Role)
+        const newAccount = await account.create(ID.unique(), Email, Password, Name);
         if (!newAccount) throw new Error('Account creation failed');
+
+        // Check if a session already exists
+        const sessions = await account.listSessions();
+
+        if (sessions.total > 0) {
+            // Delete existing sessions before creating a new one
+            await account.deleteSession('current');
+        }
 
         // Log the user in
         await account.createEmailPasswordSession(Email, Password);
@@ -72,12 +82,12 @@ export const getSessions = async () => {
 export const signIn = async (Email, Password) => {
     try {
         // Check if a session already exists
-        const sessions = await account.listSessions();
+        // const sessions = await account.listSessions();
 
-        if (sessions.total > 0) {
-            // Delete existing sessions before creating a new one
-            await account.deleteSession('current');
-        }
+        // if (sessions.total > 0) {
+        //     // Delete existing sessions before creating a new one
+        //     await account.deleteSession('current');
+        // }
 
         // Create a new session
         const session = await account.createEmailPasswordSession(Email, Password);
@@ -115,11 +125,21 @@ export const getCurrentProfile = async () => {
     }
 }
 
+export async function getFilePreview(fileId) {
+    try {
+        const fileUrl = storage.getFilePreview(appwriteConfig.storageId, fileId).toString();
+        if (!fileUrl) throw new Error('Invalid file URL');
+        return fileUrl;
+    } catch (error) {
+        console.error('Error fetching file preview:', error.message);
+        return null; // Return null to handle cases where the URL cannot be fetched
+    }
+}
+
 export const updateUserProfile = async ({ name, email }) => {
     try {
         const user = await getCurrentProfile();
         const userId = user.$id;
-        console.log("User ID: ", userId)
         const avatar = avatars.getInitials(name).toString();
         await databases.updateDocument(
             appwriteConfig.databaseId,
@@ -135,7 +155,6 @@ export const updateUserProfile = async ({ name, email }) => {
         throw new Error('Failed to update user profile: ' + error.message);
     }
 };
-
 
 // Function to sign out the current user
 export const logout = async () => {
@@ -254,3 +273,61 @@ export const getMenuItems = async () => {
         throw new Error('Failed to fetch menu items: ' + error.message);
     }
 };
+
+export const updateMenuItem = async (menuItemId, data) => {
+    try {
+        return await databases.updateDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.menusCollectionId,
+            menuItemId,
+            data
+        );
+    } catch (error) {
+        console.error('Error updating menu item:', error);
+        throw error;
+    }
+};
+
+// Function to delete a menu item
+export const deleteMenuItem = async (menuItemId) => {
+    try {
+        console.log(menuItemId)
+        return await databases.deleteDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.menusCollectionId,
+            menuItemId
+        );
+    } catch (error) {
+        console.error('Error deleting menu item:', error);
+        throw error;
+    }
+};
+
+export const createOrder = async (selectedItems) => {
+    try {
+        const user = await getCurrentUser();
+        const orderData = {
+            userId: user.$id,
+            menuId: selectedItems[0]?.$id, // Assuming selectedItems is an array and you're selecting the first item
+            PurchaseDate: new Date().toISOString(),
+        };
+        console.log(orderData.userId);
+        const response = await databases.createDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.ordersCollectionId,
+            ID.unique(),
+            orderData
+        );
+        return response;
+    } catch (error) {
+        throw new Error('Failed to create order: ' + error.message);
+    }
+};
+
+
+
+
+
+
+
+

@@ -1,37 +1,46 @@
 // Components/MenuItem.js
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import colors from '../styles/colors';
 
 const MenuItem = ({ item, onSelect }) => {
     return (
         <TouchableOpacity onPress={onSelect} style={styles.container}>
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.description}>{item.description}</Text>
-            <Text style={styles.price}>${item.price.toFixed(2)}</Text>
+            <Image source={{ uri: item.imageUrl }} style={styles.image} />
+            <View style={styles.details}>
+                <Text style={styles.name}>{item.MenuName}</Text>
+                <Text style={styles.date}>Serve Date: {new Date(item.ServeDate).toLocaleDateString()}</Text>
+            </View>
         </TouchableOpacity>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
+        flexDirection: 'row',
         padding: 16,
         borderBottomColor: colors.gray100,
         borderBottomWidth: 1,
+        alignItems: 'center',
+    },
+    image: {
+        width: 60,
+        height: 60,
+        borderRadius: 8,
+        marginRight: 16,
+    },
+    details: {
+        flex: 1,
     },
     name: {
         fontSize: 18,
         fontWeight: '600',
         color: colors.black,
     },
-    description: {
+    date: {
         fontSize: 14,
         color: colors.gray600,
-    },
-    price: {
-        marginTop: 8,
-        fontSize: 16,
-        color: colors.black,
+        marginTop: 4,
     },
 });
 

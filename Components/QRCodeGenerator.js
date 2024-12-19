@@ -1,10 +1,10 @@
-// Components/QRCodeGenerator.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import QRCode from 'qrcode';
 
-function QRCodeGenerator({ orderId }) {
+function QRCodeGenerator({ orderId, getRef }) {
     const [qrCodeData, setQrCodeData] = useState('');
+    const qrCodeRef = useRef(null); // Use useRef for the QR code image reference
 
     useEffect(() => {
         QRCode.toDataURL(orderId)
@@ -12,9 +12,16 @@ function QRCodeGenerator({ orderId }) {
             .catch(err => console.error(err));
     }, [orderId]);
 
+    // Pass the ref to the parent component via the getRef callback
+    useEffect(() => {
+        if (getRef) {
+            getRef(qrCodeRef.current); // Passing the ref to the parent component
+        }
+    }, [qrCodeRef, getRef]);
+
     return (
         <View style={styles.container}>
-            {qrCodeData ? <Image source={{ uri: qrCodeData }} style={styles.qrCode} /> : null}
+            {qrCodeData ? <Image source={{ uri: qrCodeData }} style={styles.qrCode} ref={qrCodeRef} /> : null}
         </View>
     );
 }

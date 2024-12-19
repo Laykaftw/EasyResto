@@ -7,7 +7,7 @@ import LoginScreen from '../Screens/LoginScreen';
 import SignupScreen from '../Screens/SignupScreen';
 
 // Student Screens
-import MenuScreen from '../Screens/Student/MenuScreen';
+import MenuScreen from '../Screens/MenuScreen';
 import PreOrderScreen from '../Screens/Student/PreOrderScreen';
 import QRCodeScreen from '../Screens/Student/QRCodeScreen';
 import OrderSummaryScreen from '../Screens/Student/OrderSummaryScreen';
@@ -19,13 +19,15 @@ import ManageMenuScreen from '../Screens/CanteenDirector/ManageMenuScreen';
 
 // Profile Screen
 import ProfileScreen from '../Screens/ProfileScreen';
+import SplashScreen from '../Screens/SplashScreen';
 
 const Stack = createStackNavigator();
 
 function AppNavigator() {
     return (
         <NavigationContainer>
-            <Stack.Navigator initialRouteName="Login">
+            <Stack.Navigator initialRouteName="Splash">
+                <Stack.Screen name='Splash' component={SplashScreen} options={{ headerShown: false }} />
                 {/* Authentication */}
                 <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
                 <Stack.Screen name="Signup" component={SignupScreen} />
